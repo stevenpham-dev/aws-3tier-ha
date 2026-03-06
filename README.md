@@ -111,8 +111,6 @@ Place screenshots in screenshots/ using consistent numbering:
 
 04-internet-gateway.png
 
-05-nat-gateway.png (if created)
-
 06-alb.png
 
 07-target-group-health.png
@@ -128,8 +126,6 @@ Place screenshots in screenshots/ using consistent numbering:
 12-security-groups.png
 
 13-sql-validation.png
-
-14-architecture-diagram.png (optional duplicate of diagrams/)
 
 Teardown / Cost Control
 
