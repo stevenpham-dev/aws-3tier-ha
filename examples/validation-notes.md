@@ -1,26 +1,37 @@
-Validation Notes — AWS 3-Tier HA
+```md
+# Validation Notes — AWS 3-Tier HA
 
-Goal: confirm end-to-end connectivity from the app tier to the database tier.
+Goal: confirm end-to-end connectivity across the 3-tier architecture and verify least-privilege network access between tiers.
 
-What was validated
+## What was validated
 
-ALB routes HTTP traffic to healthy EC2 targets in private subnets
+### 1) ALB → EC2 (App Tier)
+- The Application Load Balancer routes HTTP traffic to healthy EC2 targets.
+- Target Group health checks are passing.
 
-EC2 instances can reach the RDS MySQL endpoint in private subnets
+### 2) EC2 (App Tier) → RDS (Data Tier)
+- App instances can reach the RDS MySQL endpoint.
+- Security groups allow MySQL access only from the App tier.
 
-Security group rules enforce least privilege:
+### 3) Security group segmentation (least privilege)
+- **Internet → ALB:** inbound `80` allowed
+- **ALB → App:** inbound `80` allowed only from ALB SG
+- **App → RDS:** inbound `3306` allowed only from App SG
 
-internet → ALB only on 80
+## Example SQL checks
 
-ALB → App only on 80
+Used SQL commands to confirm DB connectivity and query execution:
 
-App → RDS only on 3306
-
-Example SQL checks
-
+```sql
 SHOW DATABASES;
 SELECT NOW();
 
-Evidence
+See screenshots/, especially:
 
-See screenshots/ (especially the SQL validation screenshot).
+07-target-group-health.png
+
+11-rds-config.png
+
+12-security-groups.png
+
+13-sql-validation.png
