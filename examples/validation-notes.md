@@ -1,36 +1,84 @@
-# Validation Notes — AWS 3-Tier HA
+# Validation Notes - AWS 3-Tier HA (us-west-2)
 
-Goal: confirm end-to-end connectivity across the 3-tier architecture and verify least-privilege network access between tiers.
+These notes document how the environment was validated after deployment.
 
-## What was validated
+## What "success" looks like
 
-### 1) ALB → EC2 (App Tier)
-- The Application Load Balancer routes HTTP traffic to healthy EC2 targets.
-- Target Group health checks are passing.
+- ALB is reachable and returns a valid HTTP response.
+- Target group shows healthy instances.
+- App tier instances are in private subnets and managed by Auto Scaling.
+- RDS is private (not publicly accessible).
+- Security group segmentation is enforced:
+  - Internet -> ALB on 80
+  - ALB -> App on 80
+  - App -> RDS on 3306
+- Database connectivity is verified using MySQL commands.
 
-### 2) EC2 (App Tier) → RDS (Data Tier)
-- App instances can reach the RDS MySQL endpoint.
-- Security groups allow MySQL access only from the App tier.
+## Validation steps
 
-### 3) Security group segmentation (least privilege)
-- **Internet → ALB:** inbound `80` allowed
-- **ALB → App:** inbound `80` allowed only from ALB SG
-- **App → RDS:** inbound `3306` allowed only from App SG
+### 1) ALB reachability
 
-## Example SQL checks
+- Open the ALB DNS name in a browser.
+- Expected: HTTP 200 (or the expected default Nginx response if used).
 
-Used SQL commands to confirm DB connectivity and query execution:
+Related screenshots:
+- `screenshots/06-alb.png`
+- `screenshots/07-target-group-health.png`
 
-```sql
-SHOW DATABASES;
-SELECT NOW();
+### 2) Target group health
 
-See screenshots/, especially:
+- Go to EC2 -> Target Groups -> Targets.
+- Confirm targets are `healthy` in both AZs.
 
-07-target-group-health.png
+Related screenshots:
+- `screenshots/07-target-group-health.png`
 
-11-rds-config.png
+### 3) Auto Scaling group status
 
-12-security-groups.png
+- Confirm:
+  - Desired capacity is met.
+  - Instances are being launched via the launch template.
+  - Scaling policy exists (target tracking CPU).
 
-13-sql-validation.png
+Related screenshots:
+- `screenshots/08-launch-template.png`
+- `screenshots/09-auto-scaling-group.png`
+- `screenshots/10-scaling-policy.png`
+
+### 4) RDS configuration check
+
+- Confirm:
+  - Multi-AZ enabled
+  - Public access disabled
+  - Subnet group uses private subnets only
+
+Related screenshots:
+- `screenshots/11-rds-config.png`
+
+### 5) Security group segmentation check
+
+Confirm the inbound rules match the intended design:
+
+- SG-ALB:
+  - Inbound HTTP 80 from `0.0.0.0/0`
+- SG-App:
+  - Inbound HTTP 80 from SG-ALB
+- SG-RDS:
+  - Inbound MySQL 3306 from SG-App
+
+Related screenshots:
+- `screenshots/12-security-groups.png`
+
+### 6) SQL connectivity validation (proof)
+
+Connect from a controlled environment that has network access to the database.
+
+Common approaches:
+- Use SSM Session Manager into an app instance (preferred if enabled)
+- Use a temporary bastion host in a public subnet (then remove it)
+- Use an instance that already has the MySQL client installed
+
+Example commands:
+
+```bash
+mysql -h <RDS_ENDPOINT> -u <DB_USER> -p
