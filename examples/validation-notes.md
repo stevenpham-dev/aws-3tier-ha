@@ -1,4 +1,3 @@
-```md
 # Validation Notes — AWS 3-Tier HA
 
 Goal: confirm end-to-end connectivity across the 3-tier architecture and verify least-privilege network access between tiers.
